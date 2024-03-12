@@ -6,8 +6,11 @@ plugins {
 }
 
 repositories {
+    mavenLocal()
+    mavenCentral()
     maven("https://papermc.io/repo/repository/maven-public/")
     maven("https://mvn.exceptionflug.de/repository/exceptionflug-public/")
+
 }
 
 dependencies {
@@ -16,6 +19,8 @@ dependencies {
     compileOnly(libs.velocity.proxy)
     annotationProcessor(libs.velocity.api)
     compileOnly(libs.vpacketevents)
+    implementation("ninja.leaping.configurate:configurate-hocon:3.7.1")
+    implementation("ninja.leaping.configurate:configurate-core:3.7.1")
 }
 
 blossom {
