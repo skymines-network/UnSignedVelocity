@@ -51,7 +51,7 @@ public final class SessionCommandListener implements EventListener, CommandHandl
         event.setResult(ResultedEvent.GenericResult.denied());
         final String commandExecuted = packet.getCommand();
 
-        queueCommandResult(proxyServer, player, commandEvent -> {
+        queueCommandResult(proxyServer, player, (commandEvent, lastSeenMessages) -> {
             final CommandExecuteEvent.CommandResult result = commandEvent.getResult();
             if (result == CommandExecuteEvent.CommandResult.denied()) {
                 return CompletableFuture.completedFuture(null);
@@ -85,7 +85,7 @@ public final class SessionCommandListener implements EventListener, CommandHandl
                             .toServer();
                 }
             });
-        }, commandExecuted, packet.getTimeStamp());
+        }, commandExecuted, packet.getTimeStamp(), null);
     }
 
     @Override

@@ -11,6 +11,8 @@ import io.github._4drian3d.unsignedvelocity.configuration.Configuration;
 import io.github._4drian3d.unsignedvelocity.listener.EventListener;
 import io.github._4drian3d.vpacketevents.api.event.PacketReceiveEvent;
 
+import java.util.concurrent.ExecutionException;
+
 public final class KeyedChatListener implements EventListener {
     @Inject
     private EventManager eventManager;
@@ -36,26 +38,35 @@ public final class KeyedChatListener implements EventListener {
         event.setResult(ResultedEvent.GenericResult.denied());
         final String chatMessage = chatPacket.getMessage();
 
-        player.getChatQueue().queuePacket(
-                eventManager.fire(new PlayerChatEvent(player, chatMessage))
-                        .thenApply(PlayerChatEvent::getResult)
-                        .thenApply(result -> {
-                            if (!result.isAllowed()) {
-                                return null;
-                            }
-                            final boolean isModified = result.getMessage()
-                                    .map(str -> !str.equals(chatMessage))
-                                    .orElse(false);
+        player.getChatQueue().queuePacket(chatState ->
+        {
+            try {
+                return eventManager.fire(new PlayerChatEvent(player, chatMessage))
+                .thenApply(PlayerChatEvent::getResult)
+                .thenApply(result -> {
+                    if (!result.isAllowed()) {
+                        return null;
+                    }
+                    final boolean isModified = result.getMessage()
+                            .map(str -> !str.equals(chatMessage))
+                            .orElse(false);
 
-                            if (isModified) {
-                                return player.getChatBuilderFactory()
-                                        .builder()
-                                        .message(result.getMessage().orElseThrow())
-                                        .setTimestamp(chatPacket.getExpiry())
-                                        .toServer();
-                            }
-                            return chatPacket;
-                        }), chatPacket.getExpiry());
+                    if (isModified) {
+                        return player.getChatBuilderFactory()
+                                .builder()
+                                .message(result.getMessage().orElseThrow())
+                                .setTimestamp(chatPacket.getExpiry())
+                                .toServer();
+                    }
+                    return chatPacket;
+                }).get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+
+
     }
 
     @Override

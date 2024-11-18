@@ -11,6 +11,8 @@ import io.github._4drian3d.unsignedvelocity.configuration.Configuration;
 import io.github._4drian3d.unsignedvelocity.listener.EventListener;
 import io.github._4drian3d.vpacketevents.api.event.PacketReceiveEvent;
 
+import java.util.concurrent.ExecutionException;
+
 public final class SessionChatListener implements EventListener {
     @Inject
     private UnSignedVelocity plugin;
@@ -38,8 +40,10 @@ public final class SessionChatListener implements EventListener {
 
         final String chatMessage = chatPacket.getMessage();
 
-        player.getChatQueue().queuePacket(
-                eventManager.fire(new PlayerChatEvent(player, chatMessage))
+        player.getChatQueue().queuePacket(chatState ->
+        {
+            try {
+                return eventManager.fire(new PlayerChatEvent(player, chatMessage))
                         .thenApply(PlayerChatEvent::getResult)
                         .thenApply(result -> {
                             if (!result.isAllowed()) {
@@ -59,9 +63,11 @@ public final class SessionChatListener implements EventListener {
                                         .toServer();
                             }
                             return chatPacket;
-                        }),
-                chatPacket.getTimestamp()
-        );
+                        }).get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Override
